@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core'
 import { HostAppService } from './api/hostApp'
 import { CLIHandler, CLIEvent } from './api/cli'
 import { HostWindowService } from './api/hostWindow'
-import { QuickConnectProfileProvider } from './api/profileProvider'
 import { ProfilesService } from './services/profiles.service'
 
 @Injectable()
@@ -56,12 +55,14 @@ export class ProfileCLIHandler extends CLIHandler {
 
     private async handleOpenQuickConnect (providerId: string, query: string) {
         const provider = this.profiles.getProviders().find(x => x.id === providerId)
-        if(!provider || !(provider instanceof QuickConnectProfileProvider)) {
-            console.error(`Requested provider "${providerId}" not found`)
+        // Use duck typing: check if provider has quickConnect method
+        // This allows third-party plugins to implement quickConnect without inheriting QuickConnectProfileProvider
+        if (!provider || typeof (provider as any).quickConnect !== 'function') {
+            console.error(`Requested provider "${providerId}" not found or does not support quick connect`)
             return
         }
-        const profile = provider.quickConnect(query)
-        if(!profile) {
+        const profile = (provider as any).quickConnect(query)
+        if (!profile) {
             console.error(`Could not parse quick connect query "${query}"`)
             return
         }

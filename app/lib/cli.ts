@@ -30,9 +30,8 @@ export function parseArgs (argv: string[], cwd: string): any {
         })
         .command('quickConnect <providerId> <query>', 'open a tab for specified quick connect provider', yargs => {
             return yargs.positional('providerId', {
-                describe: 'The name of a quick connect profile provider',
+                describe: 'Profile provider ID (e.g., ssh, telnet). Plugins may add more providers.',
                 type: 'string',
-                choices: ['ssh', 'telnet'],
             }).positional('query', {
                 describe: 'The quick connect query string',
                 type: 'string',

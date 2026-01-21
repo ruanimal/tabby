@@ -281,6 +281,10 @@ export class Window {
         this.send('cli', parseArgs(argv, cwd), cwd, secondInstance)
     }
 
+    passURLArguments (argv: any, secondInstance: boolean): void {
+        this.send('cli', argv, process.cwd(), secondInstance)
+    }
+
     private async enableDockedWindowStyles (enabled: boolean) {
         if (process.platform === 'darwin') {
             if (enabled) {

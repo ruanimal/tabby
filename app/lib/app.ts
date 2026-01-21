@@ -10,6 +10,7 @@ import { saveConfig } from './config'
 import { Window, WindowOptions } from './window'
 import { pluginManager } from './pluginManager'
 import { PTYManager } from './pty'
+import { parseTabbyURL } from './urlHandler'
 
 /* eslint-disable block-scoped-var */
 
@@ -232,6 +233,23 @@ export class Application {
         }
         this.presentAllWindows()
         this.windows[this.windows.length - 1].passCliArguments(argv, cwd, true)
+    }
+
+    async handleURL (url: string): Promise<void> {
+        const argv = parseTabbyURL(url)
+        if (!argv) {
+            console.error('Failed to parse URL:', url)
+            return
+        }
+
+        console.log('Application - handleURL - final argv to send:', JSON.stringify(argv))
+
+        if (!this.windows.length) {
+            await this.newWindow()
+        }
+        this.presentAllWindows()
+
+        this.windows[this.windows.length - 1].passURLArguments(argv)
     }
 
     private useBuiltinGraphics (): void {

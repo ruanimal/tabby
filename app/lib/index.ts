@@ -35,6 +35,15 @@ process.mainModule = module
 
 const application = new Application(configStore)
 
+// Register tabby:// URL scheme
+if (process.defaultApp) {
+    if (process.argv.length >= 2) {
+        app.setAsDefaultProtocolClient('tabby', process.execPath, [process.argv[1]])
+    }
+} else {
+    app.setAsDefaultProtocolClient('tabby')
+}
+
 ipcMain.on('app:new-window', () => {
     application.newWindow()
 })
@@ -60,8 +69,22 @@ app.on('activate', async () => {
     }
 })
 
+// Handle URL scheme on macOS
+app.on('open-url', async (event, url) => {
+    event.preventDefault()
+    console.log('Received open-url event:', url)
+    await application.handleURL(url)
+})
+
 app.on('second-instance', async (_event, newArgv, cwd) => {
-    application.handleSecondInstance(newArgv, cwd)
+    // Check if any argument is a tabby:// URL (Windows/Linux)
+    const urlArg = newArgv.find(arg => arg.startsWith('tabby://'))
+    if (urlArg) {
+        console.log('Received URL via second-instance:', urlArg)
+        await application.handleURL(urlArg)
+    } else {
+        application.handleSecondInstance(newArgv, cwd)
+    }
 })
 
 if (!app.requestSingleInstanceLock()) {

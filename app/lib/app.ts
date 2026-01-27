@@ -235,7 +235,7 @@ export class Application {
         this.windows[this.windows.length - 1].passCliArguments(argv, cwd, true)
     }
 
-    async handleURL (url: string): Promise<void> {
+    async handleURL (url: string, secondInstance: boolean = false): Promise<void> {
         const argv = parseTabbyURL(url)
         if (!argv) {
             console.error('Failed to parse URL:', url)
@@ -244,12 +244,18 @@ export class Application {
 
         console.log('Application - handleURL - final argv to send:', JSON.stringify(argv))
 
+        // Ensure Electron app is ready (in case open-url fires before ready event)
+        await app.whenReady()
+
         if (!this.windows.length) {
             await this.newWindow()
         }
         this.presentAllWindows()
 
-        this.windows[this.windows.length - 1].passURLArguments(argv)
+        const window = this.windows[this.windows.length - 1]
+        // Wait for window and Angular to be ready
+        await window.ready
+        window.passURLArguments(argv, secondInstance)
     }
 
     private useBuiltinGraphics (): void {

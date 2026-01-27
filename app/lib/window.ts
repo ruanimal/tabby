@@ -277,9 +277,8 @@ export class Window {
         this.send('cli', parseArgs(argv, cwd), cwd, secondInstance)
     }
 
-    passURLArguments (argv: any): void {
-        // URL arguments are already parsed, send directly
-        this.send('cli', argv, process.cwd(), true)
+    passURLArguments (argv: any, secondInstance: boolean): void {
+        this.send('cli', argv, process.cwd(), secondInstance)
     }
 
     private async enableDockedWindowStyles (enabled: boolean) {

@@ -73,7 +73,7 @@ app.on('activate', async () => {
 app.on('open-url', async (event, url) => {
     event.preventDefault()
     console.log('Received open-url event:', url)
-    await application.handleURL(url)
+    await application.handleURL(url, false)
 })
 
 app.on('second-instance', async (_event, newArgv, cwd) => {
@@ -81,7 +81,7 @@ app.on('second-instance', async (_event, newArgv, cwd) => {
     const urlArg = newArgv.find(arg => arg.startsWith('tabby://'))
     if (urlArg) {
         console.log('Received URL via second-instance:', urlArg)
-        await application.handleURL(urlArg)
+        await application.handleURL(urlArg, true)
     } else {
         application.handleSecondInstance(newArgv, cwd)
     }

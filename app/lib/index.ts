@@ -15,6 +15,7 @@ import './sentry'
 import './lru'
 import { parseArgs } from './cli'
 import { Application } from './app'
+import { isTabbyURL } from './urlHandler'
 import electronDebug = require('electron-debug')
 import { loadConfig } from './config'
 
@@ -34,6 +35,15 @@ try {
 process.mainModule = module
 
 const application = new Application(configStore)
+
+// Register tabby:// URL scheme
+if (process.defaultApp) {
+    if (process.argv.length >= 2) {
+        app.setAsDefaultProtocolClient('tabby', process.execPath, [process.argv[1]])
+    }
+} else {
+    app.setAsDefaultProtocolClient('tabby')
+}
 
 ipcMain.on('app:new-window', () => {
     application.newWindow()
@@ -60,8 +70,21 @@ app.on('activate', async () => {
     }
 })
 
+// Handle URL scheme on macOS
+app.on('open-url', async (event, url) => {
+    event.preventDefault()
+    console.log('Received open-url event:', url)
+    await application.handleURL(url, false)
+})
+
 app.on('second-instance', async (_event, newArgv, cwd) => {
-    application.handleSecondInstance(newArgv, cwd)
+    const urlArg = newArgv.find(arg => isTabbyURL(arg))
+    if (urlArg) {
+        console.log('Received URL via second-instance:', urlArg)
+        await application.handleURL(urlArg, true)
+    } else {
+        application.handleSecondInstance(newArgv, cwd)
+    }
 })
 
 if (!app.requestSingleInstanceLock()) {
@@ -85,6 +108,15 @@ app.on('ready', async () => {
 
     const window = await application.newWindow({ hidden: argv.hidden })
     await window.ready
-    window.passCliArguments(process.argv, process.cwd(), false)
+
+    const urlArg = process.argv.find(arg => isTabbyURL(arg))
+    if (urlArg) {
+        console.log('Received URL via first instance argv:', urlArg)
+        await application.handleURL(urlArg, false)
+    } else {
+        window.passCliArguments(process.argv, process.cwd(), false)
+    }
+
     window.focus()
 })
+

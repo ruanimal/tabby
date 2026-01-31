@@ -32,7 +32,7 @@ export function createParserConfig (cwd: string): ParserConfig {
                 command: 'open [directory]',
                 description: 'open a shell in a directory',
                 options: {
-                    directory: { type: 'string', default: cwd },
+                    directory: { type: 'string', 'default': cwd },
                 },
             },
             {
@@ -104,7 +104,7 @@ export function createParserConfig (cwd: string): ParserConfig {
 function applyOptionsToYargs (yargsInstance: any, options: Record<string, YargsOption>, method: 'option' | 'positional') {
     return Object.entries(options).reduce(
         (yargs, [key, value]) => yargs[method](key, value),
-        yargsInstance
+        yargsInstance,
     )
 }
 
@@ -112,8 +112,8 @@ function createParserFromConfig (config: ParserConfig) {
     const yargs = require('yargs/yargs')
     let parser = yargs().usage(config.usage)
     config.commands.forEach(cmd => {
-        const builder = (yargs: any) => {
-            let instance = yargs
+        const builder = (yargsInstance: any) => {
+            let instance = yargsInstance
             if (cmd.options) {
                 instance = applyOptionsToYargs(instance, cmd.options, 'option')
             }

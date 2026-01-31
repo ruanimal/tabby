@@ -235,7 +235,7 @@ export class Application {
         this.windows[this.windows.length - 1].passCliArguments(argv, cwd, true)
     }
 
-    async handleURL (url: string, secondInstance: boolean = false): Promise<void> {
+    async handleURL (url: string, secondInstance = false): Promise<void> {
         const cwd = process.cwd()
         const argv = parseTabbyURL(url, cwd)
         if (!argv) {

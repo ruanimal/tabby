@@ -1,11 +1,11 @@
 import { createParserConfig } from './cli'
 import { parse as parseShellCommand } from 'shell-quote'
 
-export function isTabbyURL(arg: string): boolean {
+export function isTabbyURL (arg: string): boolean {
     return arg.toLowerCase().startsWith('tabby://')
 }
 
-export function parseTabbyURL(url: string, cwd: string = process.cwd()): any {
+export function parseTabbyURL (url: string, cwd: string = process.cwd()): any {
     try {
         if (!isTabbyURL(url)) {
             return null
@@ -27,7 +27,7 @@ export function parseTabbyURL(url: string, cwd: string = process.cwd()): any {
         }
         for (const [key, value] of urlInstance.searchParams.entries()) {
             let parsedValue: any = value
-            const optionConfig = commandConfig?.options?.[key] || commandConfig?.positionals?.[key]
+            const optionConfig = commandConfig.options?.[key] ?? commandConfig.positionals?.[key]
             if (optionConfig) {
                 switch (optionConfig.type) {
                     case 'boolean':

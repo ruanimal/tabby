@@ -15,7 +15,6 @@ import './sentry'
 import './lru'
 import { parseArgs } from './cli'
 import { Application } from './app'
-import { isTabbyURL } from './urlHandler'
 import electronDebug = require('electron-debug')
 import { loadConfig } from './config'
 
@@ -74,17 +73,12 @@ app.on('activate', async () => {
 app.on('open-url', async (event, url) => {
     event.preventDefault()
     console.log('Received open-url event:', url)
-    await application.handleURL(url, false)
+    await app.whenReady()
+    application.handleSecondInstance([url], process.cwd())
 })
 
 app.on('second-instance', async (_event, newArgv, cwd) => {
-    const urlArg = newArgv.find(arg => isTabbyURL(arg))
-    if (urlArg) {
-        console.log('Received URL via second-instance:', urlArg)
-        await application.handleURL(urlArg, true)
-    } else {
-        application.handleSecondInstance(newArgv, cwd)
-    }
+    application.handleSecondInstance(newArgv, cwd)
 })
 
 if (!app.requestSingleInstanceLock()) {
@@ -108,15 +102,7 @@ app.on('ready', async () => {
 
     const window = await application.newWindow({ hidden: argv.hidden })
     await window.ready
-
-    const urlArg = process.argv.find(arg => isTabbyURL(arg))
-    if (urlArg) {
-        console.log('Received URL via first instance argv:', urlArg)
-        await application.handleURL(urlArg, false)
-    } else {
-        window.passCliArguments(process.argv, process.cwd(), false)
-    }
-
+    window.passCliArguments(process.argv, process.cwd(), false)
     window.focus()
 })
 

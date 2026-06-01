@@ -26,10 +26,17 @@ class ZModemMiddleware extends SessionMiddleware {
 
         this.logger = this.log.create('zmodem')
         this.sentry = new ZModem.Sentry({
+            // to_terminal is zmodem.js' single terminal-output channel. It
+            // receives normal passthrough data (while no session is active),
+            // protocol "garbage", and crucially the trailing bytes that follow
+            // a session's "OO" terminator (e.g. the shell prompt redrawn after
+            // sz/rz exits). These trailing bytes are emitted synchronously from
+            // within the same consume() call that fires session_end, so any
+            // guard based on isActive/activeSession would drop them on platforms
+            // where "OO" and the prompt arrive in the same chunk (Linux). Always
+            // forward to the terminal.
             to_terminal: data => {
-                if (this.isActive && this.activeSession) {
-                    this.outputToTerminal.next(Buffer.from(data))
-                }
+                this.outputToTerminal.next(Buffer.from(data))
             },
             sender: data => this.outputToSession.next(Buffer.from(data)),
             on_detect: async detection => {
@@ -99,13 +106,16 @@ class ZModemMiddleware extends SessionMiddleware {
                 return
             }
         } else {
+            // No active session: sentry.consume() routes everything straight
+            // back through to_terminal, so we must not output here as well or
+            // the data would be duplicated. Only on a consume() failure do we
+            // forward the raw data as a fallback so nothing is lost.
             try {
                 this.sentry.consume(data)
             } catch (e) {
                 this.logger.error('zmodem detection error', e)
+                this.outputToTerminal.next(data)
             }
-
-            this.outputToTerminal.next(data)
         }
     }
 

@@ -138,10 +138,23 @@ class ZModemMiddleware extends SessionMiddleware {
                     sizeRemaining -= transfer.getSize()
                 }
                 await zsession.close()
+
+                this.showMessage(colors.bgBlue.black(' ZMODEM ') + ' Complete')
             } else {
                 const pendingReceives: Promise<void>[] = []
                 zsession.on('offer', xfer => {
                     pendingReceives.push(this.receiveFile(xfer, zsession))
+                })
+
+                // Emit the "Complete" message synchronously from within the
+                // session_end handler. session_end fires inside sentry.consume()
+                // immediately *before* the session's trailing bytes (e.g. the
+                // shell prompt redrawn after sz exits) are flushed to the
+                // terminal. Printing "Complete" from the awaited Promise instead
+                // would run a microtask later, i.e. *after* the prompt, and
+                // showMessage()'s leading "\r" would overwrite the prompt line.
+                zsession.on('session_end', () => {
+                    this.showMessage(colors.bgBlue.black(' ZMODEM ') + ' Complete')
                 })
 
                 zsession.start()
@@ -149,8 +162,6 @@ class ZModemMiddleware extends SessionMiddleware {
                 await new Promise(resolve => zsession.on('session_end', resolve))
                 await Promise.all(pendingReceives)
             }
-
-            this.showMessage(colors.bgBlue.black(' ZMODEM ') + ' Complete')
         } catch (error) {
             this.logger.error('ZMODEM session error', error)
             this.showMessage(colors.bgRed.black(' ZMODEM ') + ` Session failed: ${error.message}`)

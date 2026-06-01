@@ -23,6 +23,17 @@ class ZModemMiddleware extends SessionMiddleware {
     // overwritten by showMessage()'s leading "\r".
     private trailingBuffer: Buffer[] | null = null
 
+    private flushTrailingBuffer () {
+        const buffered = this.trailingBuffer
+        this.trailingBuffer = null
+        if (!buffered?.length) {
+            return
+        }
+        for (const chunk of buffered) {
+            this.outputToTerminal.next(chunk)
+        }
+    }
+
     private log = inject(LogService)
     private translate = inject(TranslateService)
     private platform = inject(PlatformService)
@@ -175,14 +186,7 @@ class ZModemMiddleware extends SessionMiddleware {
                 await Promise.all(pendingReceives)
 
                 this.showMessage(colors.bgBlue.black(' ZMODEM ') + ' Complete')
-
-                // Flush the buffered trailing bytes (shell prompt) after the
-                // status messages so it lands on its own line and survives.
-                const buffered = this.trailingBuffer ?? []
-                this.trailingBuffer = null
-                for (const chunk of buffered) {
-                    this.outputToTerminal.next(chunk)
-                }
+                this.flushTrailingBuffer()
             }
         } catch (error) {
             this.logger.error('ZMODEM session error', error)
@@ -197,11 +201,7 @@ class ZModemMiddleware extends SessionMiddleware {
             // started buffering but the flush above was skipped), release them
             // so terminal output is never permanently swallowed.
             if (this.trailingBuffer) {
-                const buffered = this.trailingBuffer
-                this.trailingBuffer = null
-                for (const chunk of buffered) {
-                    this.outputToTerminal.next(chunk)
-                }
+                this.flushTrailingBuffer()
             }
         }
     }
